@@ -4,6 +4,7 @@ const bleNusServiceUUID  = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 const bleNusCharRXUUID   = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
 const bleNusCharTXUUID   = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 const MTU = 20;
+const DATA_LEN = 23320;
 
 var bleDevice;
 var bleServer;
@@ -12,6 +13,9 @@ var rxCharacteristic;
 var txCharacteristic;
 
 var connected = false;
+var buf = new ArrayBuffer(DATA_LEN);
+var index = 0;
+var view = new DataView(buf);
 
 function connectionToggle() {
     if (connected) {
@@ -85,7 +89,6 @@ function connect() {
                                           handleNotifications);
         connected = true;
         window.term_.io.println('\r\n' + bleDevice.name + ' Connected.');
-        nusSendString('\r');
         setConnButtonState(true);
     })
     .catch(error => {
@@ -123,16 +126,23 @@ function onDisconnected() {
 function handleNotifications(event) {
     console.log('notification');
     let value = event.target.value;
-    // Convert raw data bytes to character values and use these to 
-    // construct a string.
-    let str = "";
     for (let i = 0; i < value.byteLength; i++) {
-        str += String.fromCharCode(value.getUint8(i));
+        if (index == DATA_LEN) {
+	    console.log('> Extra Data');
+            return;
+        }
+        view.setUint8(index++, value.getUint8(i));
     }
-    window.term_.io.print(str);
+
+    if (index == DATA_LEN) {
+        console.log('> Transfer Complete');
+        var file = new Blob([buf], {type: 'application/octet-stream'});
+        window.navigator.msSaveOrOpenBlob(file, "throw.throw");
+    }
 }
 
 function nusSendString(s) {
+    index = 0;
     if(bleDevice && bleDevice.gatt.connected) {
         console.log("send: " + s);
         let val_arr = new Uint8Array(s.length)
@@ -202,3 +212,4 @@ function setupHterm() {
 window.onload = function() {
     lib.init(setupHterm);
 };
+
