@@ -4,6 +4,7 @@ const bleNusServiceUUID  = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 const bleNusCharRXUUID   = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
 const bleNusCharTXUUID   = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 const MTU = 20;
+const NUM_POINTS = 896;
 const DATA_LEN = 23320;
 
 var bleDevice;
@@ -38,8 +39,6 @@ function setConnButtonState(enabled) {
 function connect() {
     if (!navigator.bluetooth) {
         console.log('WebBluetooth API is not available.\r\n' +
-                    'Please make sure the Web Bluetooth flag is enabled.');
-        window.term_.io.println('WebBluetooth API is not available on your browser.\r\n' +
                     'Please make sure the Web Bluetooth flag is enabled.');
         return;
     }
@@ -89,12 +88,11 @@ function connect() {
         txCharacteristic.addEventListener('characteristicvaluechanged',
                                           handleNotifications);
         connected = true;
-        window.term_.io.println('\r\n' + bleDevice.name + ' Connected.');
+        console.log('\r\n' + bleDevice.name + ' Connected.');
         setConnButtonState(true);
     })
     .catch(error => {
         console.log('' + error);
-        window.term_.io.println('' + error);
         if(bleDevice && bleDevice.gatt.connected)
         {
             bleDevice.gatt.disconnect();
@@ -120,7 +118,7 @@ function disconnect() {
 
 function onDisconnected() {
     connected = false;
-    window.term_.io.println('\r\n' + bleDevice.name + ' Disconnected.');
+    console.log('\r\n' + bleDevice.name + ' Disconnected.');
     setConnButtonState(false);
 }
 
@@ -139,6 +137,14 @@ function handleNotifications(event) {
         console.log('> Transfer Complete');
         var file = new Blob([buf], {type: 'application/octet-stream'});
         //window.navigator.msSaveOrOpenBlob(file, "throw.throw");
+
+        var firstDuration = view.getInt16(0);
+        var firstAccelX = view.getFloat32(NUM_POINTS/2);
+        var firstAccelY = view.getFloat32(NUM_POINTS/2 + 1);
+        var firstAccelZ = view.getFloat32(NUM_POINTS/2 + 2);
+        var firstGyroX = view.getFloat32(NUM_POINTS/2 + NUM_POINTS*3);
+        var firstGyroY = view.getFloat32(NUM_POINTS/2 + NUM_POINTS*3 + 1);
+        var firstGyroZ = view.getFloat32(NUM_POINTS/2 + NUM_POINTS*3 + 2);
 
         var a = document.createElement("a");
         var url = URL.createObjectURL(file);
@@ -170,7 +176,7 @@ function nusSendString(s) {
         }
         sendNextChunk(val_arr);
     } else {
-        window.term_.io.println('Not connected to a device yet.');
+        console.log('Not connected to a device yet.');
     }
 }
 
@@ -228,6 +234,6 @@ function setupHterm() {
 }
 
 window.onload = function() {
-    lib.init(setupHterm);
+    //lib.init(setupHterm);
 };
 
