@@ -46,8 +46,9 @@ function connect() {
     console.log('Requesting Bluetooth Device...');
     navigator.bluetooth.requestDevice({
         //filters: [{services: []}]
+        filters: [{namePrefix: ['GyroDisc']}],
         optionalServices: [bleNusServiceUUID],
-        acceptAllDevices: true
+        acceptAllDevices: false
     })
     .then(device => {
         bleDevice = device; 
@@ -137,8 +138,25 @@ function handleNotifications(event) {
     if (index == DATA_LEN) {
         console.log('> Transfer Complete');
         var file = new Blob([buf], {type: 'application/octet-stream'});
-        window.navigator.msSaveOrOpenBlob(file, "throw.throw");
+        //window.navigator.msSaveOrOpenBlob(file, "throw.throw");
+
+        var a = document.createElement("a");
+        var url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = "throw.throw";  // file name
+        document.body.appendChild(a);
+        a.click();
+        nusSendString("ack");
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
+
     }
+}
+
+function ignoreString(s) {
+//
 }
 
 function nusSendString(s) {
@@ -186,9 +204,9 @@ function setupHterm() {
     term.onTerminalReady = function() {
         const io = this.io.push();
         io.onVTKeystroke = (string) => {
-            nusSendString(string);
+            ignoreString(string);
         };
-        io.sendString = nusSendString;
+        io.sendString = ignoreString;
         initContent(io);
         this.setCursorVisible(true);
         this.keyboard.characterEncoding = 'raw';
