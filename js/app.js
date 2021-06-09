@@ -4,8 +4,8 @@ const bleNusServiceUUID  = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 const bleNusCharRXUUID   = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
 const bleNusCharTXUUID   = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 const MTU = 20;
-const NUM_POINTS = 348;
-const DATA_LEN = 26 * NUM_POINTS + 24;
+const NUM_POINTS = 900;
+const DATA_LEN = 32 * NUM_POINTS + 24;
 
 var bleDevice;
 var bleServer;
