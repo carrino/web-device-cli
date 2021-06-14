@@ -153,6 +153,7 @@ function handleNotifications(event) {
         document.body.appendChild(a);
         a.click();
         nusSendString("ack");
+	index = 0;
         setTimeout(function() {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);  
