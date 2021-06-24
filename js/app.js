@@ -136,7 +136,7 @@ function handleNotifications(event) {
     if (index == DATA_LEN) {
         console.log('> Transfer Complete');
         var file = new Blob([buf], {type: 'application/octet-stream'});
-        //window.navigator.msSaveOrOpenBlob(file, "throw.throw");
+        //window.navigator.msSaveOrOpenBlob(file, "throw_" + Date.now() + ".throw");
 
         var firstDuration = view.getInt16(0);
         var firstAccelX = view.getFloat32(NUM_POINTS/2);
@@ -149,7 +149,7 @@ function handleNotifications(event) {
         var a = document.createElement("a");
         var url = URL.createObjectURL(file);
         a.href = url;
-        a.download = "throw.throw";  // file name
+        a.download = "throw_" + Date.now() + ".throw";  // file name
         document.body.appendChild(a);
         a.click();
         nusSendString("ack");
