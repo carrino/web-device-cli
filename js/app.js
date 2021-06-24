@@ -19,7 +19,7 @@ var index = 0;
 var view = new DataView(buf);
 
 function connectionToggle() {
-    if (connected) {
+    if (connected || bleDevice) {
         disconnect();
     } else {
         connect();
@@ -30,9 +30,16 @@ function connectionToggle() {
 // Sets button to either Connect or Disconnect
 function setConnButtonState(enabled) {
     if (enabled) {
-        document.getElementById("clientConnectButton").innerHTML = "Disconnect";
+        document.getElementById("clientConnectButton").innerHTML = "Disconnect from " + bleDevice.name;
+        document.getElementById("clientConnectButton").style.backgroundColor = null;
     } else {
+      if (bleDevice) {
+        document.getElementById("clientConnectButton").innerHTML = "Disconnect from " + bleDevice.name;
+        document.getElementById("clientConnectButton").style.backgroundColor = 'red';
+      } else {
         document.getElementById("clientConnectButton").innerHTML = "Connect";
+        document.getElementById("clientConnectButton").style.backgroundColor = null;
+      }
     }
 }
 
@@ -43,17 +50,35 @@ function connect() {
         return;
     }
     console.log('Requesting Bluetooth Device...');
-    navigator.bluetooth.requestDevice({
+    var promise = navigator.bluetooth.requestDevice({
         //filters: [{services: []}]
         filters: [{namePrefix: ['GyroDisc']}],
         optionalServices: [bleNusServiceUUID],
         acceptAllDevices: false
     })
+    connectDevice(promise);
+}
+
+function onAdvertisement(event) {
+  console.log('Advertisement received.');
+  console.log('  Device Name: ' + event.device.name);
+  console.log('  Device ID: ' + event.device.id);
+  console.log('  RSSI: ' + event.rssi);
+  console.log('  TX Power: ' + event.txPower);
+  console.log('  UUIDs: ' + event.uuids);
+  event.device.unwatchAdvertisements();
+  connectDevice(Promise.resolve(event.device));
+}
+
+
+function connectDevice(devicePromise) {
+    devicePromise
     .then(device => {
         bleDevice = device; 
         console.log('Found ' + device.name);
         console.log('Connecting to GATT Server...');
         bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+        bleDevice.addEventListener('advertisementreceived', onAdvertisement);
         return device.gatt.connect();
     })
     .then(server => {
@@ -88,6 +113,7 @@ function connect() {
         txCharacteristic.addEventListener('characteristicvaluechanged',
                                           handleNotifications);
         connected = true;
+	bleDevice.watchAdvertisements();
         console.log('\r\n' + bleDevice.name + ' Connected.');
         setConnButtonState(true);
     })
@@ -97,6 +123,10 @@ function connect() {
         {
             bleDevice.gatt.disconnect();
         }
+        if (bleDevice) {
+	  bleDevice.watchAdvertisements();
+        }
+        setConnButtonState(false);
     });
 }
 
@@ -107,13 +137,15 @@ function disconnect() {
     }
     console.log('Disconnecting from Bluetooth Device...');
     if (bleDevice.gatt.connected) {
+        bleDevice.removeEventListener('advertisementreceived', onAdvertisement);
         bleDevice.gatt.disconnect();
+        bleDevice.unwatchAdvertisements();
         connected = false;
-        setConnButtonState(false);
-        console.log('Bluetooth Device connected: ' + bleDevice.gatt.connected);
     } else {
         console.log('> Bluetooth Device is already disconnected');
     }
+    bleDevice = null;
+    setConnButtonState(false);
 }
 
 function onDisconnected() {
